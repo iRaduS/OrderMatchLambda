@@ -6,7 +6,7 @@ import { OrderBatchAlgorithmService } from "./orderBatchAlgorithm.service";
 import { LinearDistanceService } from "./linearDistance.service";
 import { CourierActionType } from "../types/CourierAction.model";
 import { Batch } from "../types/Batch.model";
-import { Courier } from "../types/Courier.model";
+import { Courier, CourierVehicleType } from "../types/Courier.model";
 
 @Injectable({ scope: Scope.REQUEST })
 export class DeliveryRouteAlgorithmService {
@@ -15,6 +15,8 @@ export class DeliveryRouteAlgorithmService {
     private linearDistanceService: LinearDistanceService
   ) {}
   private static readonly THRESHOLD_ASSIGNABLE_DISTANCE_DELIVERY: number = 0.3;
+  private readonly EMPTY_DISTANCE_COURIER: number = 5;
+  private readonly BASED_EDGE_COST: number = 1000;
 
   public async startAllocationAlgorithm(inputData: RequestDataType) {
     const filteredCouriers = inputData.availableCouriers!.filter(courier => {
@@ -35,7 +37,7 @@ export class DeliveryRouteAlgorithmService {
     );
 
     const assignmentResults = this.solveMinCostMatchingBipartiteGraph(filteredCouriers, batchOrders);
-    return this.formResultAssignmentResponse(assignmentResults, filteredCouriers, batchOrders)
+    return this.formResultAssignmentResponse(assignmentResults, batchOrders)
   }
 
   private solveMinCostMatchingBipartiteGraph(couriers: Array<Courier>, batches: Array<Batch>) {
@@ -55,10 +57,17 @@ export class DeliveryRouteAlgorithmService {
   }
 
   private computeScore(courier: Courier, batch: Batch) {
-    return 50.0;
+    const distanceToFirstBatchAction = this.linearDistanceService.getDistanceBetweenPoints(courier, batch.actions[0].venueLocation);
+    if (distanceToFirstBatchAction > this.EMPTY_DISTANCE_COURIER) {
+      return null;
+    }
+
+    const pollutionScoreFactor = courier.vehicleType === CourierVehicleType.ELECTRIC ? 0 :
+      this.linearDistanceService.getBatchConfigurationDistance(batch.actions) * courier.vehicleEmission;
+    return this.BASED_EDGE_COST + distanceToFirstBatchAction + pollutionScoreFactor;
   }
 
-  private formResultAssignmentResponse(assignmentResults, filteredCouriers: Array<Courier>, batchOrders: Array<Batch>) {
+  private formResultAssignmentResponse(assignmentResults, batchOrders: Array<Batch>) {
     let assignationValues = {};
 
     for (const assignmentResult of assignmentResults) {

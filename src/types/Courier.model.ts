@@ -13,7 +13,7 @@ export interface Courier {
   actions: Array<CourierAction>
 }
 
-enum CourierVehicleType {
+export enum CourierVehicleType {
   ELECTRIC,
   CAR
 }
