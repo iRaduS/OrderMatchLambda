@@ -4,9 +4,13 @@ import { Courier } from "../types/Courier.model";
 import { Order } from "../types/Order.model";
 import { Batch } from "../types/Batch.model";
 import { CourierActionType } from "../types/CourierAction.model";
+import {LinearDistanceService} from "./linearDistance.service";
 
 @Injectable({ scope: Scope.REQUEST })
 export class OrderBatchAlgorithmService {
+  constructor(
+    private linearDistanceService: LinearDistanceService
+  ) {}
   private readonly MAXIMUM_ORDERS_PER_BATCH: number = 2;
 
   public formBatchForCouriers(couriers: Array<Courier>, orders: Array<Order>): Array<Batch> {
@@ -24,7 +28,7 @@ export class OrderBatchAlgorithmService {
               actionType: CourierActionType.DELIVERY,
               venueLocation: order.deliveryVenue
             }
-          ]
+          ],
         } as Batch
       }),
       formNewBatch = this.findMatchingBatch(batchedOrderList);
@@ -54,18 +58,35 @@ export class OrderBatchAlgorithmService {
 
   private testConfigurationBatch(firstBatch: Batch, secondBatch: Batch): Batch | null
   {
+    const argFact = (compareFn) => (array) => array.map((el, idx) => [el, idx]).reduce(compareFn)[1]
+    const argMin = argFact((max, el) => (el[0] < max[0] ? el : max))
+    const argMax = argFact((min, el) => (el[0] > min[0] ? el : min))
+
     if ((firstBatch.actions.length + secondBatch.actions.length) / 2 > this.MAXIMUM_ORDERS_PER_BATCH) {
       return null;
     }
 
-    // Corelare dupa ce avem gata partea de algoritm
+    const computeMatchingConfigurations = [
+      [firstBatch.actions[0], firstBatch.actions[1], secondBatch.actions[0], secondBatch.actions[1]],
+      [firstBatch.actions[0], secondBatch.actions[0], firstBatch.actions[1], secondBatch.actions[1]],
+      [secondBatch.actions[0], secondBatch.actions[1], firstBatch.actions[0], firstBatch.actions[1]],
+      [firstBatch.actions[0], secondBatch.actions[0], secondBatch.actions[1], firstBatch.actions[1]],
+      [secondBatch.actions[0], firstBatch.actions[0], firstBatch.actions[1], secondBatch.actions[1]],
+      [secondBatch.actions[0], firstBatch.actions[0], secondBatch.actions[1], firstBatch.actions[1]],
+    ]
+    const distancesForBatch = computeMatchingConfigurations
+      .map(computeMatchingConfiguration =>
+        this.linearDistanceService.getBatchConfigurationDistance(computeMatchingConfiguration)
+      )
+    const orderedActions = computeMatchingConfigurations[argMin(distancesForBatch)];
+
 
     return {
       uuid: uuidv4(),
       actions: [
-        ...firstBatch.actions,
-        ...secondBatch.actions
-      ]
+        ...orderedActions
+      ],
+      distanceDiff: distancesForBatch[argMax(distancesForBatch)] - distancesForBatch[argMin(distancesForBatch)]
     }
   }
 }

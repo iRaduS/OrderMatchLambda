@@ -63,7 +63,7 @@ export class DeliveryRouteAlgorithmService {
 
     for (const assignmentResult of assignmentResults) {
       if (!assignationValues.hasOwnProperty(assignmentResult.left)) {
-        assignationValues[assignmentResult.left] = { courierId: assignmentResult.left, orderActions: [] };
+        assignationValues[assignmentResult.left] = { courierId: assignmentResult.left, orderActions: [] } ;
       }
 
       assignationValues[assignmentResult.left].orderActions.push(
@@ -71,6 +71,13 @@ export class DeliveryRouteAlgorithmService {
           .filter(batch => batch.uuid === assignmentResult.right)
           .map(batch => batch.actions)
       )
+
+      const distanceDiffForCurrentBatch = batchOrders
+        .filter(batch => batch.uuid === assignmentResult.right)[0]
+        .distanceDiff!
+      if (distanceDiffForCurrentBatch) {
+        assignationValues[assignmentResult.left].distanceDiff = distanceDiffForCurrentBatch;
+      }
     }
 
     return Object.values(assignationValues);

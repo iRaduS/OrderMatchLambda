@@ -18,6 +18,14 @@ export class LinearDistanceService {
     return LinearDistanceService.EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(computeMetric), Math.sqrt(1 - computeMetric))
   }
 
+  public getBatchConfigurationDistance(batchPoints: Array<any>) {
+    let totalDistance: number = 0;
+    for (let i = 1; i < batchPoints.length; ++i) {
+      totalDistance += this.getDistanceBetweenPoints(batchPoints[i - 1].venueLocation, batchPoints[i].venueLocation);
+    }
+    return totalDistance;
+  }
+
   private static toRadians(degrees: number) {
     return degrees * Math.PI / 180.0;
   }
