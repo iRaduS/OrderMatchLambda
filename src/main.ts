@@ -39,7 +39,7 @@ export const handler: Handler = async (event: APIGatewayProxyEvent, context: Con
     DeliveryRouteAlgorithmService, contextId
   );
 
-  if (!getCurrentRequest.body.unassignedOrders.length || !getCurrentRequest.body.availableCouriers.length) {
+  if (getCurrentRequest.body.unassignedOrders.length && getCurrentRequest.body.availableCouriers.length) {
     const result = await deliveryRouteAlgorithmService.startAllocationAlgorithm(getCurrentRequest.body)
     return { statusCode: 200, body: JSON.stringify(result) }
   }
