@@ -1,0 +1,27 @@
+{
+  "name": "delivery-algorithm-service",
+  "version": "1.0.0",
+  "description": "A delivery algorithm service developed with Serverless framework and Nest.js",
+  "author": "Radu Vrinceanu <dangerzsamp@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "local": "sls offline start -c serverless.yaml --lambdaPort 4010 --httpPort 4009 --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.3.41",
+    "@nestjs/common": "^10.2.7",
+    "@nestjs/core": "^10.2.7",
+    "aws-lambda": "^1.0.7",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.125",
+    "@types/uuid": "^9.0.6",
+    "min-cost-flow": "^2.1.0",
+    "serverless": "^3.36.0",
+    "serverless-offline": "^13.2.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.2.2",
+    "uuid": "^9.0.1"
+  }
+}

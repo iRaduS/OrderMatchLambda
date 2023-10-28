@@ -1,0 +1,23 @@
+service: delivery-algorithm-service
+provider:
+  name: aws
+  runtime: nodejs18.x
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+custom:
+  serverless-offline:
+    useChildProcesses: true
+functions:
+  optimize:
+    name: DeliveryServiceLambda
+    handler: "./src/main.handler"
+    events:
+      - http:
+          path: /health
+          method: GET
+          cors: true
+      - http:
+          path: /dispatch
+          method: POST
+          cors: true
