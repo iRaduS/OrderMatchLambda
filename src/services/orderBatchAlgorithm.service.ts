@@ -4,7 +4,7 @@ import { Courier } from "../types/Courier.model";
 import { Order } from "../types/Order.model";
 import { Batch } from "../types/Batch.model";
 import { CourierActionType } from "../types/CourierAction.model";
-import {LinearDistanceService} from "./linearDistance.service";
+import { LinearDistanceService } from "./linearDistance.service";
 
 @Injectable({ scope: Scope.REQUEST })
 export class OrderBatchAlgorithmService {

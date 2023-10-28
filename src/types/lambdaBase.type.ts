@@ -13,6 +13,16 @@ export type RequestDataType = {
   unassignedOrders?: Array<Order>
 }
 
+export interface DirectionsRequestType {
+  locations: Array<{ lat: number, lng: number }>,
+}
+
+export interface DirectionsResponseType {
+  duration: number;
+  distance: number;
+  legs: Array<{ duration: number, distance: number }>;
+}
+
 export type ResponseDataType = {
   assignmentResults?: [
     {

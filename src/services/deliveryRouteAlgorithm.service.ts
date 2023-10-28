@@ -1,24 +1,26 @@
 import { Injectable, Scope } from "@nestjs/common";
 import { minimumWeightBipartiteMatch } from "min-cost-flow";
 
-import { RequestDataType } from "../types/lambdaBase.type";
+import { RequestDataType, ResponseDataType } from "../types/lambdaBase.type";
 import { OrderBatchAlgorithmService } from "./orderBatchAlgorithm.service";
 import { LinearDistanceService } from "./linearDistance.service";
 import { CourierActionType } from "../types/CourierAction.model";
 import { Batch } from "../types/Batch.model";
 import { Courier, CourierVehicleType } from "../types/Courier.model";
+import { GmapsRoutingService } from "./gmapsRouting.service";
 
 @Injectable({ scope: Scope.REQUEST })
 export class DeliveryRouteAlgorithmService {
   constructor(
     private orderBatchAlgorithmService: OrderBatchAlgorithmService,
-    private linearDistanceService: LinearDistanceService
+    private linearDistanceService: LinearDistanceService,
+    private gmapsRoutingService: GmapsRoutingService,
   ) {}
   private static readonly THRESHOLD_ASSIGNABLE_DISTANCE_DELIVERY: number = 0.3;
   private readonly EMPTY_DISTANCE_COURIER: number = 5;
   private readonly BASED_EDGE_COST: number = 1000;
 
-  public async startAllocationAlgorithm(inputData: RequestDataType) {
+  public async startAllocationAlgorithm(inputData: RequestDataType): Promise<ResponseDataType> {
     const filteredCouriers = inputData.availableCouriers!.filter(courier => {
       if (courier.actions.length === 1 && courier.actions[0].actionType === CourierActionType.DELIVERY) {
         const distanceBetweenCourierLastAction = this.linearDistanceService.getDistanceBetweenPoints(
@@ -37,7 +39,42 @@ export class DeliveryRouteAlgorithmService {
     );
 
     const assignmentResults = this.solveMinCostMatchingBipartiteGraph(filteredCouriers, batchOrders);
-    return this.formResultAssignmentResponse(assignmentResults, batchOrders)
+    const formattedAssignmentsResults = this.formResultAssignmentResponse(assignmentResults, batchOrders)
+
+    let finalListForAssignment = {};
+    const requestDate = new Date();
+    for (const formattedAssignmentsResult of formattedAssignmentsResults) {
+      const courier = filteredCouriers.filter(filteredCourier => filteredCourier.uuid === formattedAssignmentsResult.courierId)[0]
+      const startingPoint = courier.actions.length ? { lat: courier.actions[0].venue.lat, lng: courier.actions[0].venue.long } :
+        { lat: courier.lat, lng: courier.long }
+
+      const results = await this.gmapsRoutingService.directions({
+        locations: [startingPoint, ...formattedAssignmentsResult.orderActions.map(orderAction =>
+          ({ lat: orderAction.venueLocation.lat, lng: orderAction.venueLocation.long })
+        )]
+      })
+
+      let distanceLegs = 0;
+      let durationLegs = 0;
+      finalListForAssignment[courier.uuid] = {
+        courierId: courier.uuid, orderActions: formattedAssignmentsResult.orderActions.map((orderAction, index) => {
+          distanceLegs += results.legs[index].distance;
+          durationLegs += results.legs[index].duration;
+
+          return {
+            orderId: orderAction.orderId,
+            venueId: orderAction.venueLocation.uuid,
+            estimatedDistance: distanceLegs / 1000,
+            estimatedTime: requestDate.setSeconds(requestDate.getSeconds() + durationLegs),
+            actionType: orderAction.actionType
+          }
+        })
+      }
+    }
+
+    return {
+      assignmentResults: Object.values(finalListForAssignment)
+    };
   }
 
   private solveMinCostMatchingBipartiteGraph(couriers: Array<Courier>, batches: Array<Batch>) {
@@ -75,11 +112,9 @@ export class DeliveryRouteAlgorithmService {
         assignationValues[assignmentResult.left] = { courierId: assignmentResult.left, orderActions: [] } ;
       }
 
-      assignationValues[assignmentResult.left].orderActions.push(
-        ...batchOrders
+      assignationValues[assignmentResult.left].orderActions = batchOrders
           .filter(batch => batch.uuid === assignmentResult.right)
-          .map(batch => batch.actions)
-      )
+          .flatMap(batch => batch.actions)
 
       const distanceDiffForCurrentBatch = batchOrders
         .filter(batch => batch.uuid === assignmentResult.right)[0]
