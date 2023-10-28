@@ -16,8 +16,6 @@ export class OrderBatchAlgorithmService {
   private readonly MAXIMUM_DISTANCE_BETWEEN_SEGMENTS: number = 3.5;
 
   public formBatchForCouriers(couriers: Array<Courier>, orders: Array<Order>): Array<Batch> {
-    console.log(orders);
-    console.log(couriers);
     let batchedOrderList: Array<Batch> = orders.map(order => {
         return {
           uuid: uuidv4(),
