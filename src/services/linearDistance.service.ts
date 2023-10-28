@@ -4,6 +4,7 @@ import { MapPoint } from "../types/lambdaBase.type";
 @Injectable({ scope: Scope.REQUEST })
 export class LinearDistanceService {
   public static readonly EARTH_RADIUS_KM: number = 6371;
+  public readonly NORMALIZE_FACTOR: number = 1;
 
   public getDistanceBetweenPoints(firstPoint: MapPoint, secondPoint: MapPoint) {
     const [firstLat, secondLat, firstLong, secondLong] = [
@@ -24,6 +25,17 @@ export class LinearDistanceService {
       totalDistance += this.getDistanceBetweenPoints(batchPoints[i - 1].venueLocation, batchPoints[i].venueLocation);
     }
     return totalDistance;
+  }
+
+  public computeDeviationEstimation(firstBatchPoint, secondBatchPoint, thirdBatchPoint) {
+    const distanceBetweenPoints = this.getDistanceBetweenPoints(firstBatchPoint.venueLocation, thirdBatchPoint.venueLocation);
+    const firstMiddleDistance = this.getDistanceBetweenPoints(firstBatchPoint.venueLocation, secondBatchPoint.venueLocation);
+    const secondMiddleDistance = this.getDistanceBetweenPoints(secondBatchPoint.venueLocation, thirdBatchPoint.venueLocation);
+    if (distanceBetweenPoints < 0.5) {
+      return this.NORMALIZE_FACTOR;
+    }
+
+    return (firstMiddleDistance + secondMiddleDistance) / distanceBetweenPoints;
   }
 
   private static toRadians(degrees: number) {

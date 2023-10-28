@@ -12,6 +12,8 @@ export class OrderBatchAlgorithmService {
     private linearDistanceService: LinearDistanceService
   ) {}
   private readonly MAXIMUM_ORDERS_PER_BATCH: number = 2;
+  private readonly ABSOLUTE_DEVIATION_FACTOR: number = 1.2;
+  private readonly MAXIMUM_DISTANCE_BETWEEN_SEGMENTS: number = 3.5;
 
   public formBatchForCouriers(couriers: Array<Courier>, orders: Array<Order>): Array<Batch> {
     let batchedOrderList: Array<Batch> = orders.map(order => {
@@ -80,6 +82,21 @@ export class OrderBatchAlgorithmService {
       )
     const orderedActions = computeMatchingConfigurations[argMin(distancesForBatch)];
 
+    for (let i = 2; i < orderedActions.length; ++i) {
+      if (this.linearDistanceService.computeDeviationEstimation(
+        orderedActions[i - 2], orderedActions[i - 1], orderedActions[i]
+      ) > this.ABSOLUTE_DEVIATION_FACTOR) {
+        return null;
+      }
+    }
+
+    for (let i = 1; i < orderedActions.length; ++i) {
+      if (this.linearDistanceService.getDistanceBetweenPoints(
+        orderedActions[i - 1].venueLocation, orderedActions[i].venueLocation
+      ) > this.MAXIMUM_DISTANCE_BETWEEN_SEGMENTS) {
+        return null;
+      }
+    }
 
     return {
       uuid: uuidv4(),
