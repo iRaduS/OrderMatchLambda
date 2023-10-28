@@ -39,7 +39,7 @@ export const handler: Handler = async (event: APIGatewayProxyEvent, context: Con
     DeliveryRouteAlgorithmService, contextId
   );
 
-  const result = await deliveryRouteAlgorithmService.startAllocationAlgorithm(event.body as unknown as RequestDataType)
+  const result = await deliveryRouteAlgorithmService.startAllocationAlgorithm(getCurrentRequest.body)
   return { statusCode: 200, body: JSON.stringify(result) }
 }
 
@@ -57,11 +57,7 @@ const processLambdaRequest = (event: APIGatewayProxyEvent): Record<string, unkno
   }
 
   const result: Record<string, unknown> & LambdaStructureResponseType = { processed: true };
-  try {
-    result.body = JSON.parse(event.body);
-  } catch (error) {
-    return { statusCode: 400, body: JSON.stringify({ message: `invalid body (parsing error) ${error}` }) };
-  }
+  result.body = JSON.parse(event.body);
 
   return result;
 }

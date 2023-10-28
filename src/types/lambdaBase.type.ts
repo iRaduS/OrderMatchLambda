@@ -1,6 +1,6 @@
 import { Courier } from "./Courier.model";
 import { Order } from "./Order.model";
-import {CourierActionType} from "./CourierAction.model";
+import { CourierActionType } from "./CourierAction.model";
 
 export type LambdaStructureResponseType = {
   processed?: boolean,

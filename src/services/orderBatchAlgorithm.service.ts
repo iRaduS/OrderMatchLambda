@@ -27,11 +27,10 @@ export class OrderBatchAlgorithmService {
           ]
         } as Batch
       }),
-
       formNewBatch = this.findMatchingBatch(batchedOrderList);
     while (formNewBatch !== null) {
       batchedOrderList = [
-        ...batchedOrderList.filter(batchedOrder => formNewBatch!.components.includes(batchedOrder)),
+        ...batchedOrderList.filter(batchedOrder => !formNewBatch!.components.includes(batchedOrder)),
         formNewBatch.batch
       ];
       formNewBatch = this.findMatchingBatch(batchedOrderList);

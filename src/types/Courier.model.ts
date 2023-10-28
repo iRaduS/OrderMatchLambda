@@ -1,7 +1,7 @@
 import {CourierAction} from "./CourierAction.model";
 
 export interface Courier {
-  uuid?: string,
+  uuid: string,
   name: string,
   phoneNumber: string,
   vehicleType: CourierVehicleType,

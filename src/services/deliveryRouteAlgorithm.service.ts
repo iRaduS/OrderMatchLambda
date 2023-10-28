@@ -10,8 +10,10 @@ import { Courier } from "../types/Courier.model";
 
 @Injectable({ scope: Scope.REQUEST })
 export class DeliveryRouteAlgorithmService {
-  private orderBatchAlgorithmService: OrderBatchAlgorithmService;
-  private linearDistanceService: LinearDistanceService;
+  constructor(
+    private orderBatchAlgorithmService: OrderBatchAlgorithmService,
+    private linearDistanceService: LinearDistanceService
+  ) {}
   private static readonly THRESHOLD_ASSIGNABLE_DISTANCE_DELIVERY: number = 0.3;
 
   public async startAllocationAlgorithm(inputData: RequestDataType) {
@@ -27,13 +29,13 @@ export class DeliveryRouteAlgorithmService {
 
       return true;
     });
+
     const batchOrders: Array<Batch> = this.orderBatchAlgorithmService.formBatchForCouriers(
       filteredCouriers, inputData.unassignedOrders!
     );
 
-    const assignementResults = this.solveMinCostMatchingBipartiteGraph(filteredCouriers, batchOrders);
-
-
+    const assignmentResults = this.solveMinCostMatchingBipartiteGraph(filteredCouriers, batchOrders);
+    return this.formResultAssignmentResponse(assignmentResults, filteredCouriers, batchOrders)
   }
 
   private solveMinCostMatchingBipartiteGraph(couriers: Array<Courier>, batches: Array<Batch>) {
@@ -44,7 +46,7 @@ export class DeliveryRouteAlgorithmService {
         const costBetweenCourierAndBatch = this.computeScore(courier, batch);
 
         if (costBetweenCourierAndBatch !== null) {
-          graphEdges.push({ left: courier.uuid, right: batch.uuid, cost: costBetweenCourierAndBatch })
+          graphEdges.push({ left: courier.uuid!, right: batch.uuid, weight: costBetweenCourierAndBatch })
         }
       }
     }
@@ -52,7 +54,25 @@ export class DeliveryRouteAlgorithmService {
     return minimumWeightBipartiteMatch(graphEdges);
   }
 
-  private computeScore(courier, batch) {
-    return 0;
+  private computeScore(courier: Courier, batch: Batch) {
+    return 50.0;
+  }
+
+  private formResultAssignmentResponse(assignmentResults, filteredCouriers: Array<Courier>, batchOrders: Array<Batch>) {
+    let assignationValues = {};
+
+    for (const assignmentResult of assignmentResults) {
+      if (!assignationValues.hasOwnProperty(assignmentResult.left)) {
+        assignationValues[assignmentResult.left] = { courierId: assignmentResult.left, orderActions: [] };
+      }
+
+      assignationValues[assignmentResult.left].orderActions.push(
+        ...batchOrders
+          .filter(batch => batch.uuid === assignmentResult.right)
+          .map(batch => batch.actions)
+      )
+    }
+
+    return Object.values(assignationValues);
   }
 }
