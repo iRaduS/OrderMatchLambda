@@ -1,7 +1,7 @@
 import { Venue } from "./Venue.model";
 
 export interface Order {
-  uuid?: string,
+  uuid: string,
   rating: number,
   pickupVenue: Venue,
   deliveryVenue: Venue,

@@ -39,8 +39,12 @@ export const handler: Handler = async (event: APIGatewayProxyEvent, context: Con
     DeliveryRouteAlgorithmService, contextId
   );
 
-  const result = await deliveryRouteAlgorithmService.startAllocationAlgorithm(getCurrentRequest.body)
-  return { statusCode: 200, body: JSON.stringify(result) }
+  if (!getCurrentRequest.body.unassignedOrders.length || !getCurrentRequest.body.availableCouriers.length) {
+    const result = await deliveryRouteAlgorithmService.startAllocationAlgorithm(getCurrentRequest.body)
+    return { statusCode: 200, body: JSON.stringify(result) }
+  }
+
+  return { statusCode: 200, body: "No results to be assigned"};
 }
 
 const processLambdaRequest = (event: APIGatewayProxyEvent): Record<string, unknown> & LambdaStructureResponseType => {
